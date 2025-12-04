@@ -55,24 +55,23 @@ jobs:
         with:
           app-name: 'calls'
           slot-name: 'Production'
-          app-settings-json: >-
+          app-settings-json: |
             [
-              { "name": "DB_URI", "value": ${{ toJson(secrets.DB_URI) }}, "slotSetting": false },
-              { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": ${{ toJson(secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION) }}, "slotSetting": false },
-              { "name": "DB_NAME", "value": ${{ toJson(secrets.DB_NAME) }}, "slotSetting": false },
-              { "name": "SERVER_PORT", "value": ${{ toJson(secrets.SERVER_PORT) }}, "slotSetting": false },
-              { "name": "USERS_BASE", "value": ${{ toJson(secrets.USERS_BASE) }}, "slotSetting": false },
-              { "name": "USERS_PUBLIC_PATH", "value": ${{ toJson(secrets.USERS_PUBLIC_PATH) }}, "slotSetting": false },
-              { "name": "RESERVATIONS_BASE", "value": ${{ toJson(secrets.RESERVATIONS_BASE) }}, "slotSetting": false },
-              { "name": "UPLEARN_ALLOWED_ORIGINS", "value": ${{ toJson(secrets.UPLEARN_ALLOWED_ORIGINS) }}, "slotSetting": false },
-              { "name": "CALL_MAX_MINUTES", "value": ${{ toJson(secrets.CALL_MAX_MINUTES) }}, "slotSetting": false },
-              { "name": "WS_MAX_MESSAGE_SIZE", "value": ${{ toJson(secrets.WS_MAX_MESSAGE_SIZE) }}, "slotSetting": false },
-              { "name": "WS_HEARTBEAT_SECONDS", "value": ${{ toJson(secrets.WS_HEARTBEAT_SECONDS) }}, "slotSetting": false },
-              { "name": "WS_IDLE_TIMEOUT_SECONDS", "value": ${{ toJson(secrets.WS_IDLE_TIMEOUT_SECONDS) }}, "slotSetting": false },
-              { "name": "WS_RATE_LIMIT", "value": ${{ toJson(secrets.WS_RATE_LIMIT) }}, "slotSetting": false },
-              { "name": "STUN_URLS", "value": ${{ toJson(secrets.STUN_URLS) }}, "slotSetting": false },
-              { "name": "TURN_USERNAME", "value": ${{ toJson(secrets.TURN_USERNAME) }}, "slotSetting": false },
-              { "name": "TURN_PASSWORD", "value": ${{ toJson(secrets.TURN_PASSWORD) }}, "slotSetting": false }
+              { "name": "DB_URI", "value": "${{ secrets.DB_URI }}", "slotSetting": false },
+              { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": "${{ secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION }}", "slotSetting": false },
+              { "name": "DB_NAME", "value": "${{ secrets.DB_NAME }}", "slotSetting": false },
+              { "name": "USERS_BASE", "value": "${{ secrets.USERS_BASE }}", "slotSetting": false },
+              { "name": "USERS_PUBLIC_PATH", "value": "${{ secrets.USERS_PUBLIC_PATH }}", "slotSetting": false },
+              { "name": "RESERVATIONS_BASE", "value": "${{ secrets.RESERVATIONS_BASE }}", "slotSetting": false },
+              { "name": "UPLEARN_ALLOWED_ORIGINS", "value": "${{ secrets.UPLEARN_ALLOWED_ORIGINS }}", "slotSetting": false },
+              { "name": "CALL_MAX_MINUTES", "value": "${{ secrets.CALL_MAX_MINUTES }}", "slotSetting": false },
+              { "name": "WS_MAX_MESSAGE_SIZE", "value": "${{ secrets.WS_MAX_MESSAGE_SIZE }}", "slotSetting": false },
+              { "name": "WS_HEARTBEAT_SECONDS", "value": "${{ secrets.WS_HEARTBEAT_SECONDS }}", "slotSetting": false },
+              { "name": "WS_IDLE_TIMEOUT_SECONDS", "value": "${{ secrets.WS_IDLE_TIMEOUT_SECONDS }}", "slotSetting": false },
+              { "name": "WS_RATE_LIMIT", "value": "${{ secrets.WS_RATE_LIMIT }}", "slotSetting": false },
+              { "name": "STUN_URLS", "value": "${{ secrets.STUN_URLS }}", "slotSetting": false },
+              { "name": "TURN_USERNAME", "value": "${{ secrets.TURN_USERNAME }}", "slotSetting": false },
+              { "name": "TURN_PASSWORD", "value": "${{ secrets.TURN_PASSWORD }}", "slotSetting": false }
             ]
 
       - name: Deploy to Azure Web App
