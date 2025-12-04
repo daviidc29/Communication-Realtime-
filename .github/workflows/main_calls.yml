@@ -60,6 +60,7 @@ jobs:
               { "name": "DB_URI", "value": ${{ toJson(secrets.DB_URI) }}, "slotSetting": false },
               { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": ${{ toJson(secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION) }}, "slotSetting": false },
               { "name": "DB_NAME", "value": ${{ toJson(secrets.DB_NAME) }}, "slotSetting": false },
+              { "name": "SERVER_PORT", "value": ${{ toJson(secrets.SERVER_PORT) }}, "slotSetting": false },
               { "name": "USERS_BASE", "value": ${{ toJson(secrets.USERS_BASE) }}, "slotSetting": false },
               { "name": "USERS_PUBLIC_PATH", "value": ${{ toJson(secrets.USERS_PUBLIC_PATH) }}, "slotSetting": false },
               { "name": "RESERVATIONS_BASE", "value": ${{ toJson(secrets.RESERVATIONS_BASE) }}, "slotSetting": false },
