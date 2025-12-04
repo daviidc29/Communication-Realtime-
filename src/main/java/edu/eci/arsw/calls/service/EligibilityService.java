@@ -23,7 +23,7 @@ public class EligibilityService {
         new ParameterizedTypeReference<>() {};
 
     public EligibilityService(
-            @Value("${reservations.base:https://reservations-service.duckdns.org/api/reservations}") String baseUrl) {
+            @Value("${reservations.base:http://localhost:8090/api/reservations}") String baseUrl) {
         this.baseUrl = baseUrl;
         this.schedulerClient = RestClient.builder().baseUrl(baseUrl).build();
     }
