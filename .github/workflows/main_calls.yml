@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -37,21 +37,48 @@ jobs:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write # This is required for requesting the JWT
+      contents: read # This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: java-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A1E7B6D103174B6ABC96E789EFD1A264 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EC287101A0374FBDB20C408245A577CE }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0C309D63995E4283933039D99D1760B3 }}
+
+      # NUEVO PASO: Configurar las variables de entorno en Azure
+      - name: Configure App Settings
+        uses: Azure/appservice-settings@v1
+        with:
+          app-name: 'calls'
+          slot-name: 'Production'
+          # Se asume que el nombre del secret en GitHub es idéntico al nombre de la variable
+          app-settings-json: |
+            [
+              { "name": "DB_URI", "value": "${{ secrets.DB_URI }}" },
+              { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": "${{ secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION }}" },
+              { "name": "DB_NAME", "value": "${{ secrets.DB_NAME }}" },
+              { "name": "SERVER_PORT", "value": "${{ secrets.SERVER_PORT }}" },
+              { "name": "USERS_BASE", "value": "${{ secrets.USERS_BASE }}" },
+              { "name": "USERS_PUBLIC_PATH", "value": "${{ secrets.USERS_PUBLIC_PATH }}" },
+              { "name": "RESERVATIONS_BASE", "value": "${{ secrets.RESERVATIONS_BASE }}" },
+              { "name": "UPLEARN_ALLOWED_ORIGINS", "value": "${{ secrets.UPLEARN_ALLOWED_ORIGINS }}" },
+              { "name": "CALL_MAX_MINUTES", "value": "${{ secrets.CALL_MAX_MINUTES }}" },
+              { "name": "WS_MAX_MESSAGE_SIZE", "value": "${{ secrets.WS_MAX_MESSAGE_SIZE }}" },
+              { "name": "WS_HEARTBEAT_SECONDS", "value": "${{ secrets.WS_HEARTBEAT_SECONDS }}" },
+              { "name": "WS_IDLE_TIMEOUT_SECONDS", "value": "${{ secrets.WS_IDLE_TIMEOUT_SECONDS }}" },
+              { "name": "WS_RATE_LIMIT", "value": "${{ secrets.WS_RATE_LIMIT }}" },
+              { "name": "STUN_URLS", "value": "${{ secrets.STUN_URLS }}" },
+              { "name": "TURN_USERNAME", "value": "${{ secrets.TURN_USERNAME }}" },
+              { "name": "TURN_PASSWORD", "value": "${{ secrets.TURN_PASSWORD }}" }
+            ]
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -60,4 +87,3 @@ jobs:
           app-name: 'calls'
           slot-name: 'Production'
           package: '*.jar'
-          
