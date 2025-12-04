@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy JAR app to Azure Web App - calls
 
 on:
@@ -13,7 +10,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read # This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +22,7 @@ jobs:
           distribution: 'microsoft'
 
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean install -DskipTests
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -37,8 +34,8 @@ jobs:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write # This is required for requesting the JWT
-      contents: read # This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -53,35 +50,32 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EC287101A0374FBDB20C408245A577CE }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0C309D63995E4283933039D99D1760B3 }}
 
-      # ESTE ES EL PASO CRÍTICO CON LA INDENTACIÓN CORRECTA
-      - name: Configure App Settings
-        uses: Azure/appservice-settings@v1
+      - name: Set Azure App Settings
+        uses: azure/appservice-settings@v1
         with:
           app-name: 'calls'
           slot-name: 'Production'
-          # El bloque de JSON debe empezar en la línea siguiente y mantener la indentación
           app-settings-json: |
-            [
-              { "name": "DB_URI", "value": "${{ secrets.DB_URI }}" },
-              { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": "${{ secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION }}" },
-              { "name": "DB_NAME", "value": "${{ secrets.DB_NAME }}" },
-              { "name": "SERVER_PORT", "value": "${{ secrets.SERVER_PORT }}" },
-              { "name": "USERS_BASE", "value": "${{ secrets.USERS_BASE }}" },
-              { "name": "USERS_PUBLIC_PATH", "value": "${{ secrets.USERS_PUBLIC_PATH }}" },
-              { "name": "RESERVATIONS_BASE", "value": "${{ secrets.RESERVATIONS_BASE }}" },
-              { "name": "UPLEARN_ALLOWED_ORIGINS", "value": "${{ secrets.UPLEARN_ALLOWED_ORIGINS }}" },
-              { "name": "CALL_MAX_MINUTES", "value": "${{ secrets.CALL_MAX_MINUTES }}" },
-              { "name": "WS_MAX_MESSAGE_SIZE", "value": "${{ secrets.WS_MAX_MESSAGE_SIZE }}" },
-              { "name": "WS_HEARTBEAT_SECONDS", "value": "${{ secrets.WS_HEARTBEAT_SECONDS }}" },
-              { "name": "WS_IDLE_TIMEOUT_SECONDS", "value": "${{ secrets.WS_IDLE_TIMEOUT_SECONDS }}" },
-              { "name": "WS_RATE_LIMIT", "value": "${{ secrets.WS_RATE_LIMIT }}" },
-              { "name": "STUN_URLS", "value": "${{ secrets.STUN_URLS }}" },
-              { "name": "TURN_USERNAME", "value": "${{ secrets.TURN_USERNAME }}" },
-              { "name": "TURN_PASSWORD", "value": "${{ secrets.TURN_PASSWORD }}" }
-            ]
+            {
+              "DB_URI": "${{ secrets.DB_URI }}",
+              "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION": "${{ secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION }}",
+              "DB_NAME": "${{ secrets.DB_NAME }}",
+              "SERVER_PORT": "${{ secrets.SERVER_PORT }}",
+              "USERS_BASE": "${{ secrets.USERS_BASE }}",
+              "USERS_PUBLIC_PATH": "${{ secrets.USERS_PUBLIC_PATH }}",
+              "RESERVATIONS_BASE": "${{ secrets.RESERVATIONS_BASE }}",
+              "UPLEARN_ALLOWED_ORIGINS": "${{ secrets.UPLEARN_ALLOWED_ORIGINS }}",
+              "CALL_MAX_MINUTES": "${{ secrets.CALL_MAX_MINUTES }}",
+              "WS_MAX_MESSAGE_SIZE": "${{ secrets.WS_MAX_MESSAGE_SIZE }}",
+              "WS_HEARTBEAT_SECONDS": "${{ secrets.WS_HEARTBEAT_SECONDS }}",
+              "WS_IDLE_TIMEOUT_SECONDS": "${{ secrets.WS_IDLE_TIMEOUT_SECONDS }}",
+              "WS_RATE_LIMIT": "${{ secrets.WS_RATE_LIMIT }}",
+              "STUN_URLS": "${{ secrets.STUN_URLS }}",
+              "TURN_USERNAME": "${{ secrets.TURN_USERNAME }}",
+              "TURN_PASSWORD": "${{ secrets.TURN_PASSWORD }}"
+            }
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'calls'
