@@ -24,11 +24,19 @@ jobs:
       - name: Build with Maven
         run: mvn clean install -DskipTests
 
+      - name: Prepare deployment package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\azure-package" | Out-Null
+          $jar = Get-ChildItem -Path "${{ github.workspace }}\target" -Filter *.jar | Where-Object { $_.Name -notmatch 'sources|javadoc' } | Select-Object -First 1
+          Copy-Item $jar.FullName "${{ github.workspace }}\azure-package\app.jar" -Force
+          Copy-Item "${{ github.workspace }}\web.config" "${{ github.workspace }}\azure-package\web.config" -Force
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/target/*.jar'
+          path: '${{ github.workspace }}/azure-package'
 
   deploy:
     runs-on: windows-latest
@@ -42,6 +50,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-app
+          path: './package'
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -80,4 +89,4 @@ jobs:
         with:
           app-name: 'calls'
           slot-name: 'Production'
-          package: '*.jar'
+          package: './package'
