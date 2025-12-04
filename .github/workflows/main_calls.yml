@@ -55,23 +55,25 @@ jobs:
         with:
           app-name: 'calls'
           slot-name: 'Production'
-          app-settings: |
-            DB_URI=${{ secrets.DB_URI }}
-            SPRING_DATA_MONGODB_AUTO_INDEX_CREATION=${{ secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            SERVER_PORT=${{ secrets.SERVER_PORT }}
-            USERS_BASE=${{ secrets.USERS_BASE }}
-            USERS_PUBLIC_PATH=${{ secrets.USERS_PUBLIC_PATH }}
-            RESERVATIONS_BASE=${{ secrets.RESERVATIONS_BASE }}
-            UPLEARN_ALLOWED_ORIGINS=${{ secrets.UPLEARN_ALLOWED_ORIGINS }}
-            CALL_MAX_MINUTES=${{ secrets.CALL_MAX_MINUTES }}
-            WS_MAX_MESSAGE_SIZE=${{ secrets.WS_MAX_MESSAGE_SIZE }}
-            WS_HEARTBEAT_SECONDS=${{ secrets.WS_HEARTBEAT_SECONDS }}
-            WS_IDLE_TIMEOUT_SECONDS=${{ secrets.WS_IDLE_TIMEOUT_SECONDS }}
-            WS_RATE_LIMIT=${{ secrets.WS_RATE_LIMIT }}
-            STUN_URLS=${{ secrets.STUN_URLS }}
-            TURN_USERNAME=${{ secrets.TURN_USERNAME }}
-            TURN_PASSWORD=${{ secrets.TURN_PASSWORD }}
+          app-settings-json: |
+            {
+              "DB_URI": ${{ toJson(secrets.DB_URI) }},
+              "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION": ${{ toJson(secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION) }},
+              "DB_NAME": ${{ toJson(secrets.DB_NAME) }},
+              "SERVER_PORT": ${{ toJson(secrets.SERVER_PORT) }},
+              "USERS_BASE": ${{ toJson(secrets.USERS_BASE) }},
+              "USERS_PUBLIC_PATH": ${{ toJson(secrets.USERS_PUBLIC_PATH) }},
+              "RESERVATIONS_BASE": ${{ toJson(secrets.RESERVATIONS_BASE) }},
+              "UPLEARN_ALLOWED_ORIGINS": ${{ toJson(secrets.UPLEARN_ALLOWED_ORIGINS) }},
+              "CALL_MAX_MINUTES": ${{ toJson(secrets.CALL_MAX_MINUTES) }},
+              "WS_MAX_MESSAGE_SIZE": ${{ toJson(secrets.WS_MAX_MESSAGE_SIZE) }},
+              "WS_HEARTBEAT_SECONDS": ${{ toJson(secrets.WS_HEARTBEAT_SECONDS) }},
+              "WS_IDLE_TIMEOUT_SECONDS": ${{ toJson(secrets.WS_IDLE_TIMEOUT_SECONDS) }},
+              "WS_RATE_LIMIT": ${{ toJson(secrets.WS_RATE_LIMIT) }},
+              "STUN_URLS": ${{ toJson(secrets.STUN_URLS) }},
+              "TURN_USERNAME": ${{ toJson(secrets.TURN_USERNAME) }},
+              "TURN_PASSWORD": ${{ toJson(secrets.TURN_PASSWORD) }}
+            }
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
