@@ -21,7 +21,7 @@ jobs:
           distribution: 'microsoft'
           cache: 'maven'
 
-      # Genera el boot-jar (repackage). Asegúrate de tener spring-boot-maven-plugin en tu POM.
+      # Genera el boot-jar (repackage)
       - name: Build with Maven
         run: mvn -B clean package -DskipTests
 
@@ -40,7 +40,7 @@ jobs:
           Write-Host "Boot JAR seleccionado: $($jar.Name) ($([math]::Round($jar.Length/1MB,2)) MB)"
           Copy-Item $jar.FullName "${{ github.workspace }}\azure-package\app.jar" -Force
 
-          # Verifica que web.config use HTTP_PLATFORM_PORT (para Windows App Service)
+          # Copia el web.config (debe contener HTTP_PLATFORM_PORT)
           $web = Join-Path $env:GITHUB_WORKSPACE 'web.config'
           if (-not (Test-Path $web)) { throw "web.config no encontrado en la raíz del repo" }
           $txt = Get-Content $web -Raw
@@ -79,30 +79,30 @@ jobs:
         with:
           app-name: 'calls'
           slot-name: 'Production'
-          app-settings-json: >-
+          # JSON VÁLIDO: sin comentarios ni comas al final
+          app-settings-json: |
             [
-              { "name": "DB_URI", "value": ${{ toJson(secrets.DB_URI) }}, "slotSetting": false },
-              { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": ${{ toJson(secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION) }}, "slotSetting": false },
-              { "name": "DB_NAME", "value": ${{ toJson(secrets.DB_NAME) }}, "slotSetting": false },
+              {"name":"DB_URI","value":${{ toJson(secrets.DB_URI) }},"slotSetting":false},
+              {"name":"SPRING_DATA_MONGODB_AUTO_INDEX_CREATION","value":${{ toJson(secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION) }},"slotSetting":false},
+              {"name":"DB_NAME","value":${{ toJson(secrets.DB_NAME) }},"slotSetting":false},
 
-              // REMOVIDO SERVER_PORT: Windows usa HTTP_PLATFORM_PORT internamente
-              { "name": "USERS_BASE", "value": ${{ toJson(secrets.USERS_BASE) }}, "slotSetting": false },
-              { "name": "USERS_PUBLIC_PATH", "value": ${{ toJson(secrets.USERS_PUBLIC_PATH) }}, "slotSetting": false },
-              { "name": "RESERVATIONS_BASE", "value": ${{ toJson(secrets.RESERVATIONS_BASE) }}, "slotSetting": false },
-              { "name": "UPLEARN_ALLOWED_ORIGINS", "value": ${{ toJson(secrets.UPLEARN_ALLOWED_ORIGINS) }}, "slotSetting": false },
+              {"name":"USERS_BASE","value":${{ toJson(secrets.USERS_BASE) }},"slotSetting":false},
+              {"name":"USERS_PUBLIC_PATH","value":${{ toJson(secrets.USERS_PUBLIC_PATH) }},"slotSetting":false},
+              {"name":"RESERVATIONS_BASE","value":${{ toJson(secrets.RESERVATIONS_BASE) }},"slotSetting":false},
+              {"name":"UPLEARN_ALLOWED_ORIGINS","value":${{ toJson(secrets.UPLEARN_ALLOWED_ORIGINS) }},"slotSetting":false},
 
-              { "name": "CALL_MAX_MINUTES", "value": ${{ toJson(secrets.CALL_MAX_MINUTES) }}, "slotSetting": false },
-              { "name": "WS_MAX_MESSAGE_SIZE", "value": ${{ toJson(secrets.WS_MAX_MESSAGE_SIZE) }}, "slotSetting": false },
-              { "name": "WS_HEARTBEAT_SECONDS", "value": ${{ toJson(secrets.WS_HEARTBEAT_SECONDS) }}, "slotSetting": false },
-              { "name": "WS_IDLE_TIMEOUT_SECONDS", "value": ${{ toJson(secrets.WS_IDLE_TIMEOUT_SECONDS) }}, "slotSetting": false },
-              { "name": "WS_RATE_LIMIT", "value": ${{ toJson(secrets.WS_RATE_LIMIT) }}, "slotSetting": false },
+              {"name":"CALL_MAX_MINUTES","value":${{ toJson(secrets.CALL_MAX_MINUTES) }},"slotSetting":false},
+              {"name":"WS_MAX_MESSAGE_SIZE","value":${{ toJson(secrets.WS_MAX_MESSAGE_SIZE) }},"slotSetting":false},
+              {"name":"WS_HEARTBEAT_SECONDS","value":${{ toJson(secrets.WS_HEARTBEAT_SECONDS) }},"slotSetting":false},
+              {"name":"WS_IDLE_TIMEOUT_SECONDS","value":${{ toJson(secrets.WS_IDLE_TIMEOUT_SECONDS) }},"slotSetting":false},
+              {"name":"WS_RATE_LIMIT","value":${{ toJson(secrets.WS_RATE_LIMIT) }},"slotSetting":false},
 
-              { "name": "STUN_URLS", "value": ${{ toJson(secrets.STUN_URLS) }}, "slotSetting": false },
-              { "name": "TURN_URLS", "value": ${{ toJson(secrets.TURN_URLS) }}, "slotSetting": false },
-              { "name": "TURN_USERNAME", "value": ${{ toJson(secrets.TURN_USERNAME) }}, "slotSetting": false },
-              { "name": "TURN_PASSWORD", "value": ${{ toJson(secrets.TURN_PASSWORD) }}, "slotSetting": false },
+              {"name":"STUN_URLS","value":${{ toJson(secrets.STUN_URLS) }},"slotSetting":false},
+              {"name":"TURN_URLS","value":${{ toJson(secrets.TURN_URLS) }},"slotSetting":false},
+              {"name":"TURN_USERNAME","value":${{ toJson(secrets.TURN_USERNAME) }},"slotSetting":false},
+              {"name":"TURN_PASSWORD","value":${{ toJson(secrets.TURN_PASSWORD) }},"slotSetting":false},
 
-              { "name": "REDIS_ENABLED", "value": "false", "slotSetting": false }
+              {"name":"REDIS_ENABLED","value":"false","slotSetting":false}
             ]
 
       - name: Deploy to Azure Web App
