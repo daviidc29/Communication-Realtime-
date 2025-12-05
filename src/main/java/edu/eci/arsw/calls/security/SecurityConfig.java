@@ -2,16 +2,14 @@ package edu.eci.arsw.calls.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint; 
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Configuración de seguridad para la aplicación.
- */
 @Configuration
 public class SecurityConfig {
     private final TokenAuthFilter tokenAuthFilter;
@@ -21,17 +19,19 @@ public class SecurityConfig {
     }
 
     /**
-     * Configura la cadena de filtros de seguridad.
-     * 
-     * @param http El objeto HttpSecurity para configurar la seguridad HTTP.
+     * Configuración de seguridad HTTP.
+     *
+     * @param http El objeto HttpSecurity para configurar.
      * @return La cadena de filtros de seguridad configurada.
      * @throws Exception Si ocurre un error durante la configuración.
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors(Customizer.withDefaults())
+        http
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // ← clave para preflights
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/api/calls/ice-servers").permitAll()
                         .requestMatchers("/ws/call/**").permitAll()

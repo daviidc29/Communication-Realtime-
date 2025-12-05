@@ -7,30 +7,44 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 
 /**
- * CORS configuracion para la aplicación.
+ * Configuración de CORS para la aplicación.
  */
 @Configuration
 public class CorsConfig {
 
-    @Value("${uplearn.cors.allowed-origins:http://localhost:3000}")
+    @Value("${uplearn.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://nice-mud-05a4c8f10.3.azurestaticapps.net/}")
     private String allowedOrigins;
 
     /**
-     * Configura las políticas de CORS para la aplicación.
-     * 
-     * @return Fuente de configuración CORS.
+     * Configura la fuente de configuración CORS.
+     *
+     * @return La fuente de configuración CORS.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
+
+        cfg.setAllowedOriginPatterns(origins);
+
         cfg.setAllowCredentials(true);
-        cfg.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization"));
+
+        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        cfg.setAllowedHeaders(List.of("*"));
+
         cfg.setExposedHeaders(Arrays.asList("Content-Type", "Authorization"));
-        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        cfg.setMaxAge(Duration.ofHours(1));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
