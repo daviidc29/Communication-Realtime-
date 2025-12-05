@@ -1,51 +1,72 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy JAR app to Azure Web App - calls
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java version
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'microsoft'
+          cache: 'maven'
 
+      # Genera el boot-jar (repackage). Asegúrate de tener spring-boot-maven-plugin en tu POM.
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn -B clean package -DskipTests
+
+      - name: Prepare deployment package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\azure-package" | Out-Null
+
+          # Selecciona el JAR ejecutable (excluye sources/javadoc/original/plain) y toma el más grande
+          $jar = Get-ChildItem -Path "${{ github.workspace }}\target" -Filter *.jar |
+                 Where-Object { $_.Name -notmatch 'sources|javadoc|original|plain' } |
+                 Sort-Object Length -Descending | Select-Object -First 1
+
+          if (-not $jar) { throw "No se encontró un JAR ejecutable en target. ¿Falta el repackage del plugin de Spring Boot?" }
+
+          Write-Host "Boot JAR seleccionado: $($jar.Name) ($([math]::Round($jar.Length/1MB,2)) MB)"
+          Copy-Item $jar.FullName "${{ github.workspace }}\azure-package\app.jar" -Force
+
+          # Verifica que web.config use HTTP_PLATFORM_PORT (para Windows App Service)
+          $web = Join-Path $env:GITHUB_WORKSPACE 'web.config'
+          if (-not (Test-Path $web)) { throw "web.config no encontrado en la raíz del repo" }
+          $txt = Get-Content $web -Raw
+          if ($txt -notmatch 'HTTP_PLATFORM_PORT') { throw "web.config no usa HTTP_PLATFORM_PORT; actualízalo para evitar 502" }
+          Copy-Item $web "${{ github.workspace }}\azure-package\web.config" -Force
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/target/*.jar'
+          path: '${{ github.workspace }}/azure-package'
 
   deploy:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: java-app
-      
+          path: './package'
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -53,11 +74,40 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_33AFDB29E45342EBAC961B7F12D9F103 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3A082E0D06F5419BBACEBC06ED0F17AC }}
 
+      - name: Set Azure App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'calls'
+          slot-name: 'Production'
+          app-settings-json: >-
+            [
+              { "name": "DB_URI", "value": ${{ toJson(secrets.DB_URI) }}, "slotSetting": false },
+              { "name": "SPRING_DATA_MONGODB_AUTO_INDEX_CREATION", "value": ${{ toJson(secrets.SPRING_DATA_MONGODB_AUTO_INDEX_CREATION) }}, "slotSetting": false },
+              { "name": "DB_NAME", "value": ${{ toJson(secrets.DB_NAME) }}, "slotSetting": false },
+
+              // REMOVIDO SERVER_PORT: Windows usa HTTP_PLATFORM_PORT internamente
+              { "name": "USERS_BASE", "value": ${{ toJson(secrets.USERS_BASE) }}, "slotSetting": false },
+              { "name": "USERS_PUBLIC_PATH", "value": ${{ toJson(secrets.USERS_PUBLIC_PATH) }}, "slotSetting": false },
+              { "name": "RESERVATIONS_BASE", "value": ${{ toJson(secrets.RESERVATIONS_BASE) }}, "slotSetting": false },
+              { "name": "UPLEARN_ALLOWED_ORIGINS", "value": ${{ toJson(secrets.UPLEARN_ALLOWED_ORIGINS) }}, "slotSetting": false },
+
+              { "name": "CALL_MAX_MINUTES", "value": ${{ toJson(secrets.CALL_MAX_MINUTES) }}, "slotSetting": false },
+              { "name": "WS_MAX_MESSAGE_SIZE", "value": ${{ toJson(secrets.WS_MAX_MESSAGE_SIZE) }}, "slotSetting": false },
+              { "name": "WS_HEARTBEAT_SECONDS", "value": ${{ toJson(secrets.WS_HEARTBEAT_SECONDS) }}, "slotSetting": false },
+              { "name": "WS_IDLE_TIMEOUT_SECONDS", "value": ${{ toJson(secrets.WS_IDLE_TIMEOUT_SECONDS) }}, "slotSetting": false },
+              { "name": "WS_RATE_LIMIT", "value": ${{ toJson(secrets.WS_RATE_LIMIT) }}, "slotSetting": false },
+
+              { "name": "STUN_URLS", "value": ${{ toJson(secrets.STUN_URLS) }}, "slotSetting": false },
+              { "name": "TURN_URLS", "value": ${{ toJson(secrets.TURN_URLS) }}, "slotSetting": false },
+              { "name": "TURN_USERNAME", "value": ${{ toJson(secrets.TURN_USERNAME) }}, "slotSetting": false },
+              { "name": "TURN_PASSWORD", "value": ${{ toJson(secrets.TURN_PASSWORD) }}, "slotSetting": false },
+
+              { "name": "REDIS_ENABLED", "value": "false", "slotSetting": false }
+            ]
+
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'calls'
           slot-name: 'Production'
-          package: '*.jar'
-          
+          package: './package'
