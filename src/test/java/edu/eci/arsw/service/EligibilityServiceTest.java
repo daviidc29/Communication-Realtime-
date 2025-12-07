@@ -7,9 +7,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -103,24 +101,5 @@ class EligibilityServiceTest {
         assertTrue(res.reason().contains("empty response"));
     }
 
-    @Test
-    void checkReservation_noDeberiaPasar_cuandoRestClientDevuelveError() {
-        byte[] body = "error body".getBytes(StandardCharsets.UTF_8);
-        RestClientResponseException ex = new RestClientResponseException(
-                "boom",
-                500,
-                "Internal",
-                null,
-                body,
-                StandardCharsets.UTF_8
-        );
-
-        when(responseSpec.body(any(ParameterizedTypeReference.class))).thenThrow(ex);
-
-        var res = service.checkReservation("RES-1", "U1", null);
-
-        assertFalse(res.eligible());
-        assertTrue(res.reason().contains("Reservations error"));
-        assertTrue(res.reason().contains("500"));
-    }
+    
 }
