@@ -93,7 +93,6 @@ public class EligibilityService {
                 .header("Accept", "application/json");
 
         if (bearerToken != null && !bearerToken.isBlank()) {
-
             String token = bearerToken.replaceFirst("(?i)^bearer\\s+", "");
             req = req.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         }

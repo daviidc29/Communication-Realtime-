@@ -17,7 +17,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${uplearn.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://nice-mud-05a4c8f10.3.azurestaticapps.net/}")
+    @Value("${uplearn.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://nice-mud-05a4c8f10.3.azurestaticapps.net}")
     private String allowedOrigins;
 
     /**

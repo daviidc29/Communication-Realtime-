@@ -30,10 +30,6 @@ class AuthorizationServiceTest {
         return header + "." + payload + ".signature";
     }
 
-    // ---------------------------------------------------------------------
-    // parseBearer
-    // ---------------------------------------------------------------------
-
     @Test
     void parseBearer_deberiaParsearTokenValido_casoFeliz1() {
         long exp = Instant.now().getEpochSecond() + 3600;
@@ -74,17 +70,12 @@ class AuthorizationServiceTest {
         assertEquals("Token inválido", ex.getReason());
     }
 
-    // ---------------------------------------------------------------------
-    // parseTokenOrCookie
-    // ---------------------------------------------------------------------
-
     @Test
     void parseTokenOrCookie_deberiaUsarTokenDirecto_casoFeliz1() {
         long exp = Instant.now().getEpochSecond() + 3600;
         String jwt = buildJwt("user-3", List.of("TUTOR"), exp);
 
-        AuthorizationService.AuthInfo info =
-                service.parseTokenOrCookie(jwt, null);
+        AuthorizationService.AuthInfo info = service.parseTokenOrCookie(jwt, null);
 
         assertEquals("user-3", info.userId());
         assertEquals(List.of("TUTOR"), info.roles());
@@ -96,8 +87,7 @@ class AuthorizationServiceTest {
         String jwt = buildJwt("user-4", List.of("STUDENT"), exp);
         Cookie cookie = new Cookie("access_token", jwt);
 
-        AuthorizationService.AuthInfo info =
-                service.parseTokenOrCookie(null, new Cookie[]{cookie});
+        AuthorizationService.AuthInfo info = service.parseTokenOrCookie(null, new Cookie[] { cookie });
 
         assertEquals("user-4", info.userId());
     }
@@ -116,9 +106,73 @@ class AuthorizationServiceTest {
         Cookie other = new Cookie("other", "value");
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> service.parseTokenOrCookie(null, new Cookie[]{other}));
+                () -> service.parseTokenOrCookie(null, new Cookie[] { other }));
 
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
         assertEquals("Falta token", ex.getReason());
+    }
+
+    @Test
+    void parseBearer_deberiaFallar_cuandoTokenExpiro() {
+        long expPasado = Instant.now().getEpochSecond() - 3600;
+        String jwt = buildJwt("user-expired", List.of("USER"), expPasado);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.parseBearer(jwt));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+        assertEquals("Token expirado", ex.getReason());
+    }
+
+    @Test
+    void parseBearer_deberiaFallar_cuandoFaltaSub() {
+        String payloadJson = "{\"roles\":[\"ADMIN\"], \"exp\": " + (Instant.now().getEpochSecond() + 3600) + "}";
+        String jwt = manualJwtBuild(payloadJson);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.parseBearer(jwt));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+        assertEquals("JWT sin sub", ex.getReason());
+    }
+
+    @Test
+    void parseBearer_deberiaLeerRolUnico_formatoLegacy() {
+        String payloadJson = "{\"sub\":\"user-legacy\", \"role\":\"SUPER_ADMIN\"}";
+        String jwt = manualJwtBuild(payloadJson);
+
+        AuthorizationService.AuthInfo info = service.parseBearer(jwt);
+
+        assertEquals("user-legacy", info.userId());
+        assertEquals(1, info.roles().size());
+        assertEquals("SUPER_ADMIN", info.roles().get(0));
+    }
+
+    @Test
+    void parseBearer_deberiaSoportarCaseInsensitiveBearer() {
+        long exp = Instant.now().getEpochSecond() + 3600;
+        String jwt = buildJwt("user-case", List.of(), exp);
+
+        AuthorizationService.AuthInfo info = service.parseBearer("BEARER " + jwt);
+
+        assertEquals("user-case", info.userId());
+    }
+
+    @Test
+    void parseBearer_deberiaFallar_cuandoBearerEsVacio() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.parseBearer("   ")); 
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
+        assertTrue(ex.getReason().contains("Falta Authorization"));
+    }
+
+    private String manualJwtBuild(String payloadJson) {
+        String headerJson = "{\"alg\":\"none\",\"typ\":\"JWT\"}";
+        String header = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
+        String payload = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
+        return header + "." + payload + ".signature";
     }
 }

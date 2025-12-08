@@ -5,9 +5,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>edu.eci.arsw</groupId>
-  <artifactId>call-service</artifactId>
+  <artifactId>call-RealTime</artifactId>
   <version>0.3.0</version>
-  <name>call-service</name>
+  <name>call-RealTime</name>
   <description>UpLearn Call Signaling Service (WebRTC over WS, Redis pub/sub, Mongo)</description>
 
   <properties>
