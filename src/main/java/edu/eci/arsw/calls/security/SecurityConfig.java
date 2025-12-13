@@ -10,6 +10,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Configuración de seguridad para la aplicación
+ */
 @Configuration
 public class SecurityConfig {
     private final TokenAuthFilter tokenAuthFilter;
@@ -31,9 +34,10 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // ← clave para preflights
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/api/calls/ice-servers").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll() // ← AÑADIDO
                         .requestMatchers("/ws/call/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(tokenAuthFilter, UsernamePasswordAuthenticationFilter.class)

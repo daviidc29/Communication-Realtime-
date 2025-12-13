@@ -36,16 +36,11 @@ class CallControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Valores por defecto para STUN/TURN en los tests
         ReflectionTestUtils.setField(controller, "stunUrlsCsv", "stun:stun1,stun:stun2");
         ReflectionTestUtils.setField(controller, "turnUrlsCsv", "turn:turn1,turn:turn2");
         ReflectionTestUtils.setField(controller, "turnUser", "turnUser");
         ReflectionTestUtils.setField(controller, "turnPass", "turnPass");
     }
-
-    // -------------------------------------------------------------------------
-    // createSession(Map<String,String> req, Authentication auth)
-    // -------------------------------------------------------------------------
 
     @Test
     void createSession_deberiaCrearSesionCorrectamente_casoFeliz1() {
@@ -95,17 +90,13 @@ class CallControllerTest {
 
     @Test
     void createSession_noDeberiaPasar_cuandoFaltaReservationId() {
-        Map<String, String> req = Map.of(); // sin reservationId
+        Map<String, String> req = Map.of(); 
 
         assertThrows(NullPointerException.class,
                 () -> controller.createSession(req, null));
 
         verify(callService, times(1)).create(null);
     }
-
-    // -------------------------------------------------------------------------
-    // end(String sessionId)
-    // -------------------------------------------------------------------------
 
     @Test
     void end_deberiaTerminarSesionExistente_casoFeliz1() {
@@ -155,10 +146,6 @@ class CallControllerTest {
         assertEquals("Repo error", ex.getMessage());
         verify(callService, never()).end(any());
     }
-
-    // -------------------------------------------------------------------------
-    // iceServers()
-    // -------------------------------------------------------------------------
 
     @Test
     void iceServers_deberiaRetornarStunYTurn_casoFeliz1() throws Exception {
@@ -217,10 +204,6 @@ class CallControllerTest {
         assertThrows(NullPointerException.class,
                 () -> controller.iceServers());
     }
-
-    // -------------------------------------------------------------------------
-    // metrics()
-    // -------------------------------------------------------------------------
 
     @Test
     void metrics_deberiaRetornarValoresDeSnapshot_casoFeliz1() {
