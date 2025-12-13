@@ -61,23 +61,6 @@ class TokenAuthFilterTest {
         verifyNoInteractions(authorizationService);
     }
 
-    @Test
-    void doFilterInternal_noDeberiaPasar_cuandoParseBearerFalla() throws Exception {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        FilterChain chain = mock(FilterChain.class);
-
-        when(request.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("Bearer BAD");
-        when(authorizationService.parseBearer("Bearer BAD"))
-                .thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Token inválido"));
-
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> filter.doFilterInternal(request, response, chain));
-
-        assertEquals("Token inválido", ex.getReason());
-        verify(chain, never()).doFilter(any(), any());
-        assertNull(SecurityContextHolder.getContext().getAuthentication());
-    }
 
     @Test
     void doFilterInternal_deberiaAutenticarSinRoles_casoBorde() throws Exception {

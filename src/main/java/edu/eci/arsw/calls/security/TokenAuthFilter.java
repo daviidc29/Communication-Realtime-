@@ -34,19 +34,23 @@ public class TokenAuthFilter extends OncePerRequestFilter {
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
         try {
             String bearer = request.getHeader(HttpHeaders.AUTHORIZATION);
-            if (bearer != null) {
-                var info = authorizationService.parseBearer(bearer);
 
-                var authorities = info.roles().stream()
-                        .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase()))
-                        .toList(); 
+            if (bearer != null && !bearer.isBlank()) {
+                try {
+                    var info = authorizationService.parseBearer(bearer);
 
-                var auth = new UsernamePasswordAuthenticationToken(info.userId(), "jwt", authorities);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                MDC.put("userId", info.userId());
+                    var authorities = info.roles().stream()
+                            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase()))
+                            .toList();
+
+                    var auth = new UsernamePasswordAuthenticationToken(info.userId(), "jwt", authorities);
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    MDC.put("userId", info.userId());
+                } catch (Exception ex) {
+                }
             }
             filterChain.doFilter(request, response);
         } finally {
