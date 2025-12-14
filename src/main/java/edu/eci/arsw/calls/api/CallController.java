@@ -61,7 +61,7 @@ public class CallController {
      * @return Respuesta HTTP indicando el resultado de la operación.
      */
     @PostMapping("/{sessionId}/end")
-    public ResponseEntity<Void> end(@PathVariable String sessionId) {
+    public ResponseEntity<Void> end(@PathVariable("sessionId") String sessionId) {
         return callService.findBySessionId(sessionId).map(cs -> {
             callService.end(cs);
             return ResponseEntity.ok().<Void>build();

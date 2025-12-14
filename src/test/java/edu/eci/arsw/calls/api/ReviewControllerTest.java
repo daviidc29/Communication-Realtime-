@@ -152,9 +152,9 @@ class ReviewControllerTest {
         ReviewService.TutorSummary mockSummary = new ReviewService.TutorSummary("t1", 4.5, 10L);
         when(service.summary("t1")).thenReturn(mockSummary);
 
-        ReviewService.TutorSummary result = controller.summary("t1");
+        Map<String, Object> result = controller.summary("t1");
 
-        assertEquals("t1", result.tutorId());
-        assertEquals(4.5, result.avg());
+        assertEquals("t1", result.get("tutorId"));
+        assertEquals(4.5, result.get("avg"));
     }
 }

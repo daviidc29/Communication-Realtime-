@@ -81,8 +81,10 @@ public class ReviewController {
      * @return Lista de reseñas
      */
     @GetMapping("/tutor/{tutorId}")
-    public List<ReviewResponse> list(@PathVariable String tutorId,
+    public List<ReviewResponse> list(
+            @PathVariable("tutorId") String tutorId,
             @RequestParam(name = "limit", defaultValue = "20") int limit) {
+
         limit = Math.max(1, Math.min(50, limit));
         return reviewService.listByTutor(tutorId, limit)
                 .stream()
@@ -97,8 +99,9 @@ public class ReviewController {
      * @return Resumen con tutorId, avg, count
      */
     @GetMapping("/tutor/{tutorId}/summary")
-    public ReviewService.TutorSummary summary(@PathVariable String tutorId) {
-        return reviewService.summary(tutorId);
+    public Map<String, Object> summary(@PathVariable("tutorId") String tutorId) {
+        var s = reviewService.summary(tutorId); 
+        return Map.of("tutorId", s.tutorId(), "avg", s.avg(), "count", s.count());
     }
 
     public record ReviewResponse(
