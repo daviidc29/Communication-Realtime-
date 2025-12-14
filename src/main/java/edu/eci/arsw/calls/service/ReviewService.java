@@ -13,7 +13,6 @@ import java.util.Map;
 @Service
 public class ReviewService {
 
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ReviewService.class);
     private static final String TUTOR_ID = "tutorId";
 
     private final ReviewRepository repo;
@@ -109,9 +108,6 @@ public class ReviewService {
         studentId = studentId == null ? "" : studentId.trim();
         studentName = (studentName == null) ? null : studentName.trim();
 
-        log.info("[Reviews][CREATE] reservationId={} tutorId(body)={} rating={} studentId={}",
-                reservationId, tutorId, rating, studentId);
-
         if (rating < 1 || rating > 5)
             throw new IllegalArgumentException("rating fuera de rango (1..5)");
         if (reservationId.isBlank())
@@ -128,7 +124,6 @@ public class ReviewService {
         String rStudent = String.valueOf(r.getOrDefault("studentId", r.getOrDefault("student_id", ""))).trim();
         String rTutor = String.valueOf(r.getOrDefault(TUTOR_ID, r.getOrDefault("tutor_id", ""))).trim();
 
-        log.info("[Reviews][CREATE] reservation says tutorId={} studentId={}", rTutor, rStudent);
 
         if (!studentId.equals(rStudent))
             throw new SecurityException("La reserva no pertenece al estudiante autenticado");
@@ -144,8 +139,6 @@ public class ReviewService {
         review.setComment(comment == null ? null : comment.strip());
         review.setCreatedAt(Instant.now());
 
-        var saved = repo.save(review);
-        log.info("[Reviews][CREATE] saved id={} tutorId={} rating={}", saved.getId(), saved.getTutorId(),
-                saved.getRating());
+        repo.save(review);
     }
 }
