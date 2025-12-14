@@ -37,7 +37,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/api/calls/ice-servers").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll() // ← AÑADIDO
                         .requestMatchers("/ws/call/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(tokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
