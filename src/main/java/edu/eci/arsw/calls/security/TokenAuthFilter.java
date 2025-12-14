@@ -50,6 +50,7 @@ public class TokenAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                     MDC.put("userId", info.userId());
                 } catch (Exception ex) {
+                    // Si el token no es válido, no se autentica al usuario
                 }
             }
             filterChain.doFilter(request, response);
