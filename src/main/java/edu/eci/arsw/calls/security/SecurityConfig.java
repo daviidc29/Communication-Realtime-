@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -14,9 +15,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-/**
- * Configuración de seguridad para la aplicación.
- */
 @Configuration
 public class SecurityConfig {
 
@@ -26,29 +24,34 @@ public class SecurityConfig {
         this.tokenAuthFilter = tokenAuthFilter;
     }
 
+    private RequestMatcher csrfIgnoredMatcher() {
+        return new OrRequestMatcher(
+            new AntPathRequestMatcher("/api/**"),
+            new AntPathRequestMatcher("/ws/**"),
+            new AntPathRequestMatcher("/actuator/**"),
+            new AntPathRequestMatcher("/v3/api-docs/**"),
+            new AntPathRequestMatcher("/swagger-ui/**")
+        );
+    }
 
     @Bean
     @Order(1)
     public SecurityFilterChain publicChain(HttpSecurity http) throws Exception {
-
         RequestMatcher publicMatcher = new OrRequestMatcher(
             new AntPathRequestMatcher("/api/reviews/tutor/**", HttpMethod.GET.name()),
-
             new AntPathRequestMatcher("/api/calls/ice-servers", HttpMethod.GET.name()),
-
             new AntPathRequestMatcher("/actuator/**"),
             new AntPathRequestMatcher("/v3/api-docs/**"),
             new AntPathRequestMatcher("/swagger-ui/**"),
-
             new AntPathRequestMatcher("/ws/call/**"),
-
             new AntPathRequestMatcher("/error")
         );
 
         http
             .securityMatcher(publicMatcher)
             .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.ignoringRequestMatchers(csrfIgnoredMatcher()))
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .addFilterBefore(tokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .httpBasic(basic -> basic.disable());
@@ -61,7 +64,8 @@ public class SecurityConfig {
     public SecurityFilterChain protectedChain(HttpSecurity http) throws Exception {
         http
             .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.ignoringRequestMatchers(csrfIgnoredMatcher()))
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
