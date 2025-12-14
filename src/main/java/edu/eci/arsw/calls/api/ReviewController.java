@@ -82,10 +82,13 @@ public class ReviewController {
      * @return Lista de reseñas
      */
     @GetMapping("/tutor/{tutorId}")
-    public List<Review> list(@PathVariable String tutorId,
+    public List<ReviewResponse> list(@PathVariable String tutorId,
             @RequestParam(name = "limit", defaultValue = "20") int limit) {
         limit = Math.max(1, Math.min(50, limit));
-        return reviewService.listByTutor(tutorId, limit);
+        return reviewService.listByTutor(tutorId, limit)
+                .stream()
+                .map(ReviewResponse::from)
+                .toList();
     }
 
     /**
@@ -101,5 +104,27 @@ public class ReviewController {
                 "tutorId", s.getTutorId(),
                 "avg", s.getAvg(),
                 "count", s.getCount());
+    }
+
+    public record ReviewResponse(
+            String id,
+            String tutorId,
+            String reservationId,
+            String studentId,
+            String studentName,
+            int rating,
+            String comment,
+            String createdAt) {
+        static ReviewResponse from(Review r) {
+            return new ReviewResponse(
+                    r.getId(),
+                    r.getTutorId(),
+                    r.getReservationId(),
+                    r.getStudentId(),
+                    r.getStudentName(),
+                    r.getRating(),
+                    r.getComment(),
+                    r.getCreatedAt() == null ? null : r.getCreatedAt().toString());
+        }
     }
 }
