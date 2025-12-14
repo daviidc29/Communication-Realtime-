@@ -1,7 +1,6 @@
 package edu.eci.arsw.calls.service;
 
-import edu.eci.arsw.calls.domain.Review;
-import edu.eci.arsw.calls.domain.ReviewRepository;
+import edu.eci.arsw.calls.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -9,12 +8,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Servicio para gestionar reseñas.
+ * Servicio para gestionar las reseñas de tutores.
  */
 @Service
 public class ReviewService {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ReviewService.class);
+    private static final String TUTOR_ID = "tutorId";
 
     private final ReviewRepository repo;
     private final ReservationsClient reservationsClient;
@@ -25,11 +25,11 @@ public class ReviewService {
     }
 
     /**
-     * Lista las reseñas de un tutor específico, limitando la cantidad de resultados.
+     * Lista las reseñas de un tutor con un límite máximo.
      *
-     * @param tutorId ID del tutor
-     * @param limit   límite máximo de reseñas a retornar
-     * @return lista de reseñas
+     * @param tutorId ID del tutor.
+     * @param limit   Límite máximo de reseñas a retornar.
+     * @return Lista de reseñas del tutor.
      */
     public List<Review> listByTutor(String tutorId, int limit) {
         List<Review> all = repo.findTop50ByTutorIdOrderByCreatedAtDesc(tutorId);
@@ -37,25 +37,37 @@ public class ReviewService {
     }
 
     /**
-     * Resumen de calificaciones de un tutor.
+     * Resumen de las reseñas de un tutor.
+     *
+     * @param tutorId ID del tutor.
+     * @return Resumen con promedio y conteo de reseñas.
      */
     public record TutorSummary(String tutorId, double avg, long count) {}
 
     /**
      * Obtiene el resumen de calificaciones de un tutor.
      *
-     * @param tutorId ID del tutor
-     * @return resumen de calificaciones
+     * @param tutorId ID del tutor.
+     * @return Resumen con promedio y conteo de reseñas.
      */
     public TutorSummary summary(String tutorId) {
         try {
-            var s = repo.aggregateSummary(tutorId);
-            if (s == null) return new TutorSummary(tutorId, 0.0, 0L);
+            long total = repo.count();
+            long byTutor = repo.countByTutorId(tutorId);
+            log.info("[Reviews][SUMMARY] tutorId={} totalReviews={} countByTutorId={}", tutorId, total, byTutor);
 
+            var rows = repo.aggregateSummary(tutorId);
+            if (rows == null || rows.isEmpty()) {
+                log.warn("[Reviews][SUMMARY] aggregate returned empty tutorId={}", tutorId);
+                return new TutorSummary(tutorId, 0.0, 0L);
+            }
+
+            TutorRatingSummaryDoc s = rows.get(0);
             String tid = (s.getTutorId() != null && !s.getTutorId().isBlank()) ? s.getTutorId() : tutorId;
             long count = (s.getCount() != null) ? s.getCount() : 0L;
             double avg = (s.getAvg() != null) ? s.getAvg() : 0.0;
 
+            log.info("[Reviews][SUMMARY] mapped tutorId={} count={} avg={}", tid, count, avg);
             return new TutorSummary(tid, avg, count);
         } catch (Exception e) {
             log.error("[Reviews] Error calculando summary tutorId={}", tutorId, e);
@@ -64,16 +76,36 @@ public class ReviewService {
     }
 
     /**
-     * Crea una nueva reseña.
+     * Método de depuración para obtener información interna de las reseñas.
      *
-     * @param bearerToken   Token Bearer del estudiante
-     * @param reservationId ID de la reserva
-     * @param tutorId       ID del tutor
-     * @param studentId     ID del estudiante
-     * @param studentName   Nombre del estudiante
-     * @param rating        Calificación (1-5)
-     * @param comment       Comentario opcional
+     * @param tutorId ID del tutor.
+     * @return Mapa con información de depuración.
      */
+    public Map<String, Object> debugTutor(String tutorId) {
+        var lastForTutor = repo.findTop3ByTutorIdOrderByCreatedAtDesc(tutorId).stream().map(r -> Map.of(
+                "id", r.getId(),
+                TUTOR_ID, r.getTutorId(),
+                "rating", r.getRating(),
+                "createdAt", String.valueOf(r.getCreatedAt()),
+                "reservationId", r.getReservationId()
+        )).toList();
+
+        var lastAny = repo.findTop5ByOrderByCreatedAtDesc().stream().map(r -> Map.of(
+                "id", r.getId(),
+                TUTOR_ID, r.getTutorId(),
+                "rating", r.getRating(),
+                "createdAt", String.valueOf(r.getCreatedAt())
+        )).toList();
+
+        return Map.of(
+                TUTOR_ID, tutorId,
+                "totalReviews", repo.count(),
+                "countByTutorId", repo.countByTutorId(tutorId),
+                "last3ForTutor", lastForTutor,
+                "last5AnyTutor", lastAny
+        );
+    }
+
     public void create(String bearerToken,
                        String reservationId,
                        String tutorId,
@@ -87,6 +119,9 @@ public class ReviewService {
         studentId = studentId == null ? "" : studentId.trim();
         studentName = (studentName == null) ? null : studentName.trim();
 
+        log.info("[Reviews][CREATE] reservationId={} tutorId(body)={} rating={} studentId={}",
+                reservationId, tutorId, rating, studentId);
+
         if (rating < 1 || rating > 5) throw new IllegalArgumentException("rating fuera de rango (1..5)");
         if (reservationId.isBlank()) throw new IllegalArgumentException("reservationId requerido");
         if (tutorId.isBlank()) throw new IllegalArgumentException("tutorId requerido");
@@ -96,20 +131,23 @@ public class ReviewService {
         if (r == null) throw new IllegalStateException("No se pudo validar la reserva");
 
         String rStudent = String.valueOf(r.getOrDefault("studentId", r.getOrDefault("student_id", ""))).trim();
-        String rTutor = String.valueOf(r.getOrDefault("tutorId", r.getOrDefault("tutor_id", ""))).trim();
+        String rTutor = String.valueOf(r.getOrDefault(TUTOR_ID, r.getOrDefault("tutor_id", ""))).trim();
+
+        log.info("[Reviews][CREATE] reservation says tutorId={} studentId={}", rTutor, rStudent);
 
         if (!studentId.equals(rStudent)) throw new SecurityException("La reserva no pertenece al estudiante autenticado");
         if (!tutorId.equals(rTutor)) throw new IllegalArgumentException("tutorId no coincide con la reserva");
 
         Review review = new Review();
         review.setReservationId(reservationId);
-        review.setTutorId(rTutor);          
-        review.setStudentId(rStudent);      
-        review.setStudentName(studentName); 
+        review.setTutorId(rTutor);
+        review.setStudentId(rStudent);
+        review.setStudentName(studentName);
         review.setRating(rating);
         review.setComment(comment == null ? null : comment.strip());
         review.setCreatedAt(Instant.now());
 
-        repo.save(review);
+        var saved = repo.save(review);
+        log.info("[Reviews][CREATE] saved id={} tutorId={} rating={}", saved.getId(), saved.getTutorId(), saved.getRating());
     }
 }

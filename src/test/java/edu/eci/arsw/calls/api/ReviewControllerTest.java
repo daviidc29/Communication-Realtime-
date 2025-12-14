@@ -80,9 +80,7 @@ class ReviewControllerTest {
     @Test
     void create_Unauthorized_BadJwtFormat() {
         String badToken = "Bearer SoloUnaParte"; 
-        
         ResponseEntity<Map<String, Object>> resp = controller.create(badToken, Map.of());
-        
         assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
         assertEquals("INVALID_TOKEN_PAYLOAD", resp.getBody().get("error"));
     }
@@ -90,9 +88,7 @@ class ReviewControllerTest {
     @Test
     void create_Unauthorized_BadBase64() {
         String badToken = "Bearer header.Not@Base64.sig";
-        
         ResponseEntity<Map<String, Object>> resp = controller.create(badToken, Map.of());
-        
         assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
         assertEquals("INVALID_TOKEN_PAYLOAD", resp.getBody().get("error"));
     }
@@ -100,9 +96,7 @@ class ReviewControllerTest {
     @Test
     void create_Unauthorized_MissingSub() throws Exception {
         String token = createFakeToken(Map.of("name", "Pepe"));
-        
         ResponseEntity<Map<String, Object>> resp = controller.create(token, Map.of());
-        
         assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
         assertEquals("UNAUTHORIZED", resp.getBody().get("error"));
     }
@@ -143,7 +137,6 @@ class ReviewControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, controller.create(token, body).getStatusCode());
     }
 
-
     @Test
     void list_Success_WithTutorIdAndLimit() {
         Review r = mock(Review.class);
@@ -161,9 +154,7 @@ class ReviewControllerTest {
     @Test
     void list_NullTutorId_ShouldTrimToEmpty() {
         when(service.listByTutor("", 20)).thenReturn(Collections.emptyList());
-        
         controller.list(null, 20); 
-        
         verify(service).listByTutor("", 20);
     }
     
@@ -188,22 +179,36 @@ class ReviewControllerTest {
         verify(service).listByTutor("t1", 50);
     }
 
-
     @Test
-    void summary_Success() {
+    void summary_Success_NoDebug() {
         ReviewService.TutorSummary sum = new ReviewService.TutorSummary("t1", 4.0, 10);
         when(service.summary("t1")).thenReturn(sum);
 
-        Map<String, Object> result = controller.summary("t1");
+        Map<String, Object> result = controller.summary("t1", false);
         assertEquals("t1", result.get("tutorId"));
         assertEquals(4.0, result.get("avg"));
+        assertFalse(result.containsKey("debug"));
+    }
+
+    @Test
+    void summary_Success_DebugMode() {
+        ReviewService.TutorSummary sum = new ReviewService.TutorSummary("t1", 4.0, 10);
+        when(service.summary("t1")).thenReturn(sum);
+        // Mock debug info
+        when(service.debugTutor("t1")).thenReturn(Map.of("info", "test"));
+
+        Map<String, Object> result = controller.summary("t1", true); // debug = true
+        
+        assertEquals("t1", result.get("tutorId"));
+        assertEquals(4.0, result.get("avg"));
+        assertTrue(result.containsKey("debug"));
+        assertEquals("test", ((Map<?,?>)result.get("debug")).get("info"));
     }
 
     @Test
     void summary_NullTutorId() {
         when(service.summary("")).thenReturn(new ReviewService.TutorSummary("", 0, 0));
-        
-        controller.summary(null);
+        controller.summary(null, false);
         verify(service).summary("");
     }
 }

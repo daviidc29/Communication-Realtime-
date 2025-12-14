@@ -6,11 +6,15 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 /**
- * Repositorio para gestionar reseñas en MongoDB.
+ * Repositorio para gestionar las reseñas en MongoDB.
  */
 public interface ReviewRepository extends MongoRepository<Review, String> {
 
     List<Review> findTop50ByTutorIdOrderByCreatedAtDesc(String tutorId);
+
+    long countByTutorId(String tutorId);
+    List<Review> findTop3ByTutorIdOrderByCreatedAtDesc(String tutorId);
+    List<Review> findTop5ByOrderByCreatedAtDesc();
 
     @Aggregation(pipeline = {
             "{ $match: { tutorId: ?0 } }",
@@ -20,11 +24,5 @@ public interface ReviewRepository extends MongoRepository<Review, String> {
             "} }",
             "{ $project: { _id: 0, tutorId: '$_id', count: 1, avg: { $ifNull: ['$avg', 0] } } }"
     })
-    TutorRatingSummary aggregateSummary(String tutorId);
-
-    interface TutorRatingSummary {
-        String getTutorId();
-        Long getCount();
-        Double getAvg();
-    }
+    List<TutorRatingSummaryDoc> aggregateSummary(String tutorId);
 }

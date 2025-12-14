@@ -23,6 +23,7 @@ public class ReviewController {
 
     private static final String ERROR = "error";
     private static final ObjectMapper OM = new ObjectMapper();
+    private static final String TUTOR_ID = "tutorId";
 
     private final ReviewService reviewService;
     private final AuthorizationService authz;
@@ -42,8 +43,7 @@ public class ReviewController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> create(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String bearer,
-            @RequestBody Map<String, Object> body
-    ) {
+            @RequestBody Map<String, Object> body) {
         if (bearer == null || bearer.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR, "UNAUTHORIZED"));
         }
@@ -60,8 +60,7 @@ public class ReviewController {
             Map<String, Object> claims = decodeJwtClaims(bearer);
             studentId = String.valueOf(claims.getOrDefault("sub", "")).trim();
             studentName = String.valueOf(
-                    claims.getOrDefault("name", claims.getOrDefault("email", ""))
-            ).trim();
+                    claims.getOrDefault("name", claims.getOrDefault("email", ""))).trim();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR, "INVALID_TOKEN_PAYLOAD"));
         }
@@ -70,8 +69,8 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR, "UNAUTHORIZED"));
         }
 
+        String tutorId = String.valueOf(body.getOrDefault(TUTOR_ID, "")).trim();
         String reservationId = String.valueOf(body.getOrDefault("reservationId", "")).trim();
-        String tutorId = String.valueOf(body.getOrDefault("tutorId", "")).trim();
 
         int rating;
         try {
@@ -86,7 +85,8 @@ public class ReviewController {
             reviewService.create(bearer, reservationId, tutorId, studentId, studentName, rating, comment);
             return ResponseEntity.ok(Map.of("ok", true));
         } catch (DuplicateKeyException dke) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(ERROR, "Ya existe una reseña para esa reserva"));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of(ERROR, "Ya existe una reseña para esa reserva"));
         } catch (SecurityException se) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(ERROR, se.getMessage()));
         } catch (IllegalArgumentException iae) {
@@ -102,12 +102,11 @@ public class ReviewController {
      * @param tutorId ID del tutor
      * @param limit   límite máximo de reseñas a retornar
      * @return lista de reseñas
-     */
+     */ 
     @GetMapping("/tutor/{tutorId}")
     public List<ReviewResponse> list(
-            @PathVariable("tutorId") String tutorId,
-            @RequestParam(name = "limit", defaultValue = "20") int limit
-    ) {
+            @PathVariable(TUTOR_ID) String tutorId,
+            @RequestParam(name = "limit", defaultValue = "20") int limit) {
         limit = Math.max(1, Math.min(50, limit));
         String tid = tutorId == null ? "" : tutorId.trim();
 
@@ -122,12 +121,22 @@ public class ReviewController {
      *
      * @param tutorId ID del tutor
      * @return mapa con el resumen de calificaciones
-     */
+     */ 
     @GetMapping("/tutor/{tutorId}/summary")
-    public Map<String, Object> summary(@PathVariable("tutorId") String tutorId) {
+    public Map<String, Object> summary(
+            @PathVariable(TUTOR_ID) String tutorId,
+            @RequestParam(name = "debug", defaultValue = "false") boolean debug) {
         String tid = tutorId == null ? "" : tutorId.trim();
         var s = reviewService.summary(tid);
-        return Map.of("tutorId", s.tutorId(), "avg", s.avg(), "count", s.count());
+
+        if (!debug) {
+            return Map.of(TUTOR_ID, s.tutorId(), "avg", s.avg(), "count", s.count());
+        }
+        return Map.of(
+                TUTOR_ID, s.tutorId(),
+                "avg", s.avg(),
+                "count", s.count(),
+                "debug", reviewService.debugTutor(tid));
     }
 
     /**
@@ -135,15 +144,13 @@ public class ReviewController {
      *
      * @param bearer token Bearer
      * @return mapa con los claims del JWT
-     * @throws IllegalArgumentException si el token es inválido
-     * @throws IOException si ocurre un error al leer el JSON
-     * @throws ArrayIndexOutOfBoundsException si el token no tiene el formato esperado
      */
     private static Map<String, Object> decodeJwtClaims(String bearer)
             throws IllegalArgumentException, java.io.IOException, ArrayIndexOutOfBoundsException {
         String token = bearer.replaceFirst("(?i)^Bearer\\s+", "").trim();
         String[] parts = token.split("\\.");
-        if (parts.length < 2) throw new IllegalArgumentException("JWT inválido");
+        if (parts.length < 2)
+            throw new IllegalArgumentException("JWT inválido");
 
         byte[] payload = Base64.getUrlDecoder().decode(parts[1]);
         String json = new String(payload, StandardCharsets.UTF_8);
@@ -162,8 +169,7 @@ public class ReviewController {
             String studentName,
             int rating,
             String comment,
-            String createdAt
-    ) {
+            String createdAt) {
         static ReviewResponse from(Review r) {
             return new ReviewResponse(
                     r.getId(),
@@ -173,8 +179,7 @@ public class ReviewController {
                     r.getStudentName(),
                     r.getRating(),
                     r.getComment(),
-                    r.getCreatedAt() == null ? null : r.getCreatedAt().toString()
-            );
+                    r.getCreatedAt() == null ? null : r.getCreatedAt().toString());
         }
     }
 }

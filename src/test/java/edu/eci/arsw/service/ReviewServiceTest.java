@@ -2,19 +2,24 @@ package edu.eci.arsw.service;
 
 import edu.eci.arsw.calls.domain.Review;
 import edu.eci.arsw.calls.domain.ReviewRepository;
+import edu.eci.arsw.calls.domain.TutorRatingSummaryDoc;
 import edu.eci.arsw.calls.service.ReservationsClient;
 import edu.eci.arsw.calls.service.ReviewService;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +28,15 @@ class ReviewServiceTest {
     @Mock private ReviewRepository repo;
     @Mock private ReservationsClient reservationsClient;
     @InjectMocks private ReviewService service;
+
+    @BeforeEach
+    void setup() {
+        lenient().when(repo.save(any(Review.class))).thenAnswer(i -> {
+            Review r = i.getArgument(0);
+            ReflectionTestUtils.setField(r, "id", "mock-id"); 
+            return r;
+        });
+    }
 
 
     @Test
@@ -34,39 +48,61 @@ class ReviewServiceTest {
         assertEquals(2, service.listByTutor("t1", 10).size());
     }
 
+    @Test
+    void summary_RepoReturnsNullList() {
+        when(repo.aggregateSummary("t1")).thenReturn(null);
+        var res = service.summary("t1");
+        assertEquals("t1", res.tutorId());
+        assertEquals(0.0, res.avg());
+        assertEquals(0L, res.count());
+    }
 
     @Test
-    void summary_RepoReturnsNull() {
-        when(repo.aggregateSummary("t1")).thenReturn(null);
+    void summary_RepoReturnsEmptyList() {
+        when(repo.aggregateSummary("t1")).thenReturn(Collections.emptyList());
         var res = service.summary("t1");
         assertEquals("t1", res.tutorId());
         assertEquals(0.0, res.avg());
     }
 
     @Test
-    void summary_RepoReturnsObjectWithNullFields() {
-        ReviewRepository.TutorRatingSummary mockSum = mock(ReviewRepository.TutorRatingSummary.class);
-        when(mockSum.getTutorId()).thenReturn(null);
-        when(mockSum.getCount()).thenReturn(null);
-        when(mockSum.getAvg()).thenReturn(null);
+    void summary_RepoReturnsData() {
+        TutorRatingSummaryDoc doc = new TutorRatingSummaryDoc();
+        doc.setTutorId("t1");
+        doc.setAvg(4.5);
+        doc.setCount(10L);
 
-        when(repo.aggregateSummary("t1")).thenReturn(mockSum);
+        when(repo.aggregateSummary("t1")).thenReturn(List.of(doc));
 
         var res = service.summary("t1");
-        assertEquals("t1", res.tutorId()); 
+        assertEquals("t1", res.tutorId());
+        assertEquals(4.5, res.avg());
+        assertEquals(10L, res.count());
+    }
+
+    @Test
+    void summary_RepoReturnsObjectWithNullFields() {
+        TutorRatingSummaryDoc doc = new TutorRatingSummaryDoc();
+        doc.setTutorId(null);
+        doc.setAvg(null);
+        doc.setCount(null);
+
+        when(repo.aggregateSummary("t1")).thenReturn(List.of(doc));
+
+        var res = service.summary("t1");
+        assertEquals("t1", res.tutorId());
         assertEquals(0L, res.count());
         assertEquals(0.0, res.avg());
     }
-    
+
     @Test
     void summary_RepoReturnsObjectWithEmptyId() {
-        ReviewRepository.TutorRatingSummary mockSum = mock(ReviewRepository.TutorRatingSummary.class);
-        when(mockSum.getTutorId()).thenReturn(""); 
-        when(repo.aggregateSummary("t1")).thenReturn(mockSum);
-
+        TutorRatingSummaryDoc doc = new TutorRatingSummaryDoc();
+        doc.setTutorId("");
+        when(repo.aggregateSummary("t1")).thenReturn(List.of(doc));
         var res = service.summary("t1");
-            assertEquals("t1", res.tutorId()); 
-        }
+        assertEquals("t1", res.tutorId());
+    }
 
     @Test
     void summary_ExceptionCaught() {
@@ -76,15 +112,12 @@ class ReviewServiceTest {
         assertEquals(0.0, res.avg());
     }
 
-
     @Test
     void create_Validations() {
         assertThrows(IllegalArgumentException.class, () -> service.create("t", "r", "t", "s", "n", 0, "c"));
         assertThrows(IllegalArgumentException.class, () -> service.create("t", "r", "t", "s", "n", 6, "c"));
-        
         assertThrows(IllegalArgumentException.class, () -> service.create("t", "", "t", "s", "n", 5, "c"));
         assertThrows(IllegalArgumentException.class, () -> service.create("t", "r", "", "s", "n", 5, "c"));
-        
         assertThrows(SecurityException.class, () -> service.create("t", "r", "t", "", "n", 5, "c"));
     }
 
@@ -98,7 +131,6 @@ class ReviewServiceTest {
     void create_SecurityException_StudentMismatch() {
         when(reservationsClient.getReservation("res1", "tok"))
                 .thenReturn(Map.of("studentId", "other", "tutorId", "t1"));
-        
         assertThrows(SecurityException.class, () -> service.create("tok", "res1", "t1", "s1", "n", 5, "c"));
     }
 
@@ -106,7 +138,6 @@ class ReviewServiceTest {
     void create_TutorMismatch() {
         when(reservationsClient.getReservation("res1", "tok"))
                 .thenReturn(Map.of("studentId", "s1", "tutorId", "otherTutor"));
-
         assertThrows(IllegalArgumentException.class, () -> service.create("tok", "res1", "t1", "s1", "n", 5, "c"));
     }
 
