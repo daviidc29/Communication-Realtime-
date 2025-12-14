@@ -52,10 +52,6 @@ public class ReviewService {
      */
     public TutorSummary summary(String tutorId) {
         try {
-            long total = repo.count();
-            long byTutor = repo.countByTutorId(tutorId);
-            log.info("[Reviews][SUMMARY] tutorId={} totalReviews={} countByTutorId={}", tutorId, total, byTutor);
-
             var rows = repo.aggregateSummary(tutorId);
             if (rows == null || rows.isEmpty()) {
                 log.warn("[Reviews][SUMMARY] aggregate returned empty tutorId={}", tutorId);
