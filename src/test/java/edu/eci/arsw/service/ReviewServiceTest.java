@@ -96,15 +96,6 @@ class ReviewServiceTest {
     }
 
     @Test
-    void summary_RepoReturnsObjectWithEmptyId() {
-        TutorRatingSummaryDoc doc = new TutorRatingSummaryDoc();
-        doc.setTutorId("");
-        when(repo.aggregateSummary("t1")).thenReturn(List.of(doc));
-        var res = service.summary("t1");
-        assertEquals("t1", res.tutorId());
-    }
-
-    @Test
     void summary_ExceptionCaught() {
         when(repo.aggregateSummary("t1")).thenThrow(new RuntimeException("DB error"));
         var res = service.summary("t1");

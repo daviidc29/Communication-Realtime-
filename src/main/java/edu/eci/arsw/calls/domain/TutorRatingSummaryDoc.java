@@ -10,10 +10,8 @@ public class TutorRatingSummaryDoc {
 
     public String getTutorId() { return tutorId; }
     public void setTutorId(String tutorId) { this.tutorId = tutorId; }
-
     public Long getCount() { return count; }
     public void setCount(Long count) { this.count = count; }
-
     public Double getAvg() { return avg; }
     public void setAvg(Double avg) { this.avg = avg; }
 }
