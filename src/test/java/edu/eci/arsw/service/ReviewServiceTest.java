@@ -20,6 +20,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,11 +34,10 @@ class ReviewServiceTest {
     void setup() {
         lenient().when(repo.save(any(Review.class))).thenAnswer(i -> {
             Review r = i.getArgument(0);
-            ReflectionTestUtils.setField(r, "id", "mock-id"); 
+            ReflectionTestUtils.setField(r, "id", "mock-id");
             return r;
         });
     }
-
 
     @Test
     void listByTutor_Limits() {
@@ -148,13 +148,13 @@ class ReviewServiceTest {
 
         service.create("tok", "res1", "t1", "s1", null, 5, "  nice  ");
 
-        verify(repo).save(argThat(r -> 
-            r.getStudentName() == null && 
+        verify(repo).save(argThat(r ->
+            r.getStudentName() == null &&
             r.getComment().equals("nice") &&
             r.getReservationId().equals("res1")
         ));
     }
-    
+
     @Test
     void create_Success_NullComment() {
         Map<String, Object> map = Map.of("studentId", "s1", "tutorId", "t1");
@@ -163,5 +163,62 @@ class ReviewServiceTest {
         service.create("tok", "res1", "t1", "s1", "name", 5, null);
 
         verify(repo).save(argThat(r -> r.getComment() == null));
+    }
+
+    @Test
+    void create_ShouldTrimAllInputs() {
+        Map<String, Object> map = Map.of("studentId", "s1", "tutorId", "t1");
+        when(reservationsClient.getReservation("res1", "tok")).thenReturn(map);
+
+        service.create("tok", "  res1  ", "  t1  ", "  s1  ", "  David  ", 5, "comment");
+
+        verify(repo).save(argThat(r ->
+            r.getReservationId().equals("res1") &&
+            r.getTutorId().equals("t1") &&
+            r.getStudentId().equals("s1") &&
+            r.getStudentName().equals("David")
+        ));
+    }
+
+    @Test
+    void debugTutor_ShouldReturnDetails() {
+        String tutorId = "t1";
+        
+        Review r1 = new Review();
+        ReflectionTestUtils.setField(r1, "id", "rev1");
+        r1.setTutorId(tutorId);
+        r1.setRating(5);
+        r1.setReservationId("resA");
+        r1.setCreatedAt(Instant.now());
+
+        Review r2 = new Review();
+        ReflectionTestUtils.setField(r2, "id", "rev2");
+        r2.setTutorId("other");
+        r2.setRating(4);
+        r2.setCreatedAt(Instant.now());
+
+        when(repo.findTop3ByTutorIdOrderByCreatedAtDesc(tutorId)).thenReturn(List.of(r1));
+        when(repo.findTop5ByOrderByCreatedAtDesc()).thenReturn(List.of(r1, r2));
+        when(repo.count()).thenReturn(100L);
+        when(repo.countByTutorId(tutorId)).thenReturn(50L);
+
+        Map<String, Object> result = service.debugTutor(tutorId);
+
+        assertNotNull(result);
+        assertEquals(tutorId, result.get("tutorId"));
+        assertEquals(100L, result.get("totalReviews"));
+        assertEquals(50L, result.get("countByTutorId"));
+
+        Object last3Obj = result.get("last3ForTutor");
+        assertTrue(last3Obj instanceof List, "last3ForTutor should be a List");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> last3 = (List<Map<String, Object>>) last3Obj;
+        assertEquals(1, last3.size());
+        assertEquals("rev1", last3.get(0).get("id"));
+        assertEquals("resA", last3.get(0).get("reservationId"));
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> last5 = (List<Map<String, Object>>) result.get("last5AnyTutor");
+        assertEquals(2, last5.size());
     }
 }
