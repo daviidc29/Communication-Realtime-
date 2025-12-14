@@ -22,8 +22,8 @@ public interface ReviewRepository extends MongoRepository<Review, String> {
     interface TutorRatingSummary {
         String getTutorId();
 
-        long getCount();
+        Long getCount();
 
-        double getAvg();
+        Double getAvg();
     }
 }

@@ -1,7 +1,6 @@
 package edu.eci.arsw.calls.api;
 
 import edu.eci.arsw.calls.domain.Review;
-import edu.eci.arsw.calls.domain.ReviewRepository;
 import edu.eci.arsw.calls.security.AuthorizationService;
 import edu.eci.arsw.calls.service.ReviewService;
 import org.springframework.http.*;
@@ -98,12 +97,8 @@ public class ReviewController {
      * @return Resumen con tutorId, avg, count
      */
     @GetMapping("/tutor/{tutorId}/summary")
-    public Map<String, Object> summary(@PathVariable String tutorId) {
-        ReviewRepository.TutorRatingSummary s = reviewService.summary(tutorId);
-        return Map.of(
-                "tutorId", s.getTutorId(),
-                "avg", s.getAvg(),
-                "count", s.getCount());
+    public ReviewService.TutorSummary summary(@PathVariable String tutorId) {
+        return reviewService.summary(tutorId);
     }
 
     public record ReviewResponse(

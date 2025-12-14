@@ -13,6 +13,8 @@ import java.util.Map;
 @Service
 public class ReviewService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ReviewService.class);
+
     private final ReviewRepository repo;
     private final ReservationsClient reservationsClient;
 
@@ -34,29 +36,37 @@ public class ReviewService {
     }
 
     /**
+     * Resumen de calificaciones de un tutor
+     * 
+     * @param tutorId ID del tutor
+     * @param avg     promedio de calificaciones
+     * @param count   cantidad de calificaciones
+     * @return resumen con tutorId, avg, count
+     */
+    public record TutorSummary(String tutorId, double avg, long count) {
+    }
+
+    /**
      * Obtiene el resumen de calificaciones de un tutor (público)
      * 
      * @param tutorId ID del tutor
      * @return resumen con tutorId, avg, count
      */
-    public ReviewRepository.TutorRatingSummary summary(String tutorId) {
-        ReviewRepository.TutorRatingSummary s = repo.aggregateSummary(tutorId);
-        return s != null ? s : new ReviewRepository.TutorRatingSummary() {
-            @Override
-            public String getTutorId() {
-                return tutorId;
-            }
+    public TutorSummary summary(String tutorId) {
+        try {
+            var s = repo.aggregateSummary(tutorId);
+            if (s == null)
+                return new TutorSummary(tutorId, 0.0, 0L);
 
-            @Override
-            public long getCount() {
-                return 0;
-            }
+            String tid = (s.getTutorId() != null && !s.getTutorId().isBlank()) ? s.getTutorId() : tutorId;
+            long count = (s.getCount() != null) ? s.getCount() : 0L;
+            double avg = (s.getAvg() != null) ? s.getAvg() : 0.0;
 
-            @Override
-            public double getAvg() {
-                return 0;
-            }
-        };
+            return new TutorSummary(tid, avg, count);
+        } catch (Exception e) {
+            log.error("[Reviews] Error calculando summary tutorId={}", tutorId, e);
+            return new TutorSummary(tutorId, 0.0, 0L);
+        }
     }
 
     /**
