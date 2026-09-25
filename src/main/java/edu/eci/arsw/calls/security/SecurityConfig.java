@@ -11,7 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -26,11 +26,11 @@ public class SecurityConfig {
 
     private RequestMatcher csrfIgnoredMatcher() {
         return new OrRequestMatcher(
-            new AntPathRequestMatcher("/api/**"),
-            new AntPathRequestMatcher("/ws/**"),
-            new AntPathRequestMatcher("/actuator/**"),
-            new AntPathRequestMatcher("/v3/api-docs/**"),
-            new AntPathRequestMatcher("/swagger-ui/**")
+        PathPatternRequestMatcher.pathPattern("/api/**"),
+        PathPatternRequestMatcher.pathPattern("/ws/**"),
+        PathPatternRequestMatcher.pathPattern("/actuator/**"),
+        PathPatternRequestMatcher.pathPattern("/v3/api-docs/**"),
+        PathPatternRequestMatcher.pathPattern("/swagger-ui/**")
         );
     }
 
@@ -38,13 +38,13 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicChain(HttpSecurity http) throws Exception {
         RequestMatcher publicMatcher = new OrRequestMatcher(
-            new AntPathRequestMatcher("/api/reviews/tutor/**", HttpMethod.GET.name()),
-            new AntPathRequestMatcher("/api/calls/ice-servers", HttpMethod.GET.name()),
-            new AntPathRequestMatcher("/actuator/**"),
-            new AntPathRequestMatcher("/v3/api-docs/**"),
-            new AntPathRequestMatcher("/swagger-ui/**"),
-            new AntPathRequestMatcher("/ws/call/**"),
-            new AntPathRequestMatcher("/error")
+            PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/api/reviews/tutor/**"),
+            PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/api/calls/ice-servers"),
+            PathPatternRequestMatcher.pathPattern("/actuator/**"),
+            PathPatternRequestMatcher.pathPattern("/v3/api-docs/**"),
+            PathPatternRequestMatcher.pathPattern("/swagger-ui/**"),
+            PathPatternRequestMatcher.pathPattern("/ws/call/**"),
+            PathPatternRequestMatcher.pathPattern("/error")
         );
 
         http
