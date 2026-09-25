@@ -49,7 +49,6 @@ class SecurityConfigTest {
         SecurityFilterChain filterChain(HttpSecurity http, TokenAuthFilter tokenAuthFilter) throws Exception {
             http
               .cors(c -> c.configurationSource(request -> new CorsConfiguration().applyPermitDefaultValues()))
-              .csrf(csrf -> csrf.disable())
               .authorizeHttpRequests(auth -> auth
                   .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
                   .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
