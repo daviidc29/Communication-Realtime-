@@ -6,9 +6,8 @@ import jakarta.servlet.ServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
@@ -19,8 +18,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Controller;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -50,12 +50,12 @@ class SecurityConfigTest {
             http
               .cors(c -> c.configurationSource(request -> new CorsConfiguration().applyPermitDefaultValues()))
               .authorizeHttpRequests(auth -> auth
-                  .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
-                  .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
-                  .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
-                  .requestMatchers(new AntPathRequestMatcher("/api/calls/ice-servers")).permitAll()
-                  .requestMatchers(new AntPathRequestMatcher("/ws/call/**")).permitAll()
-                  .requestMatchers(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name())).permitAll()
+                  .requestMatchers(PathPatternRequestMatcher.pathPattern("/actuator/**")).permitAll()
+                  .requestMatchers(PathPatternRequestMatcher.pathPattern("/v3/api-docs/**")).permitAll()
+                  .requestMatchers(PathPatternRequestMatcher.pathPattern("/swagger-ui/**")).permitAll()
+                  .requestMatchers(PathPatternRequestMatcher.pathPattern("/api/calls/ice-servers")).permitAll()
+                  .requestMatchers(PathPatternRequestMatcher.pathPattern("/ws/call/**")).permitAll()
+                  .requestMatchers(PathPatternRequestMatcher.pathPattern(HttpMethod.OPTIONS, "/**")).permitAll()
                   .anyRequest().authenticated())
               .addFilterBefore(tokenAuthFilter, UsernamePasswordAuthenticationFilter.class)
               .httpBasic(b -> b.disable())
@@ -64,7 +64,7 @@ class SecurityConfigTest {
         }
     }
 
-    @MockBean
+    @MockitoBean
     TokenAuthFilter tokenAuthFilter;
 
     @Autowired
